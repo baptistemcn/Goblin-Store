@@ -1,15 +1,71 @@
-import React from 'react'
+import { fireEvent, render } from "@testing-library/react";
+import React from "react";
+import { Loader } from "../shared/Loader";
+import { OrderSummary } from "./OrderSummary";
+
+jest.mock("../shared/Loader", () => ({
+  Loader: jest.fn(() => null),
+}));
 
 describe("OrderSummary", () => {
+  afterEach(jest.clearAllMocks);
   describe("while order data being loaded", () => {
-    it.todo("renders loader")
-  }) 
+    it("renders loader", () => {
+      const stubUseOrder = () => ({
+        isLoading: true,
+        order: undefined,
+      });
+
+      render(<OrderSummary useOrderHook={stubUseOrder} />);
+
+      expect(Loader).toHaveBeenCalled();
+    });
+  });
 
   describe("when order is loaded", () => {
-    it.todo("renders order info")
-  }) 
+    const stubUseOrder = () => ({
+      isLoading: false,
+      order: {
+        products: [
+          {
+            name: "Product foo",
+            price: 10,
+            image: "image.png",
+          },
+        ],
+      },
+    });
+    it("renders order info", () => {
+      const { container } = renderWithRouter(() => {
+        <OrderSummary useOrderHook={stubUseOrder} />;
+      });
 
-  describe("with error", () => {
-    it.todo("renders error info")
-  }) 
-})
+      expect(container.innerHTML).toMatch("Product foo");
+    });
+
+    it("navigate to main main on button click", () => {
+      const { getByText, history } = renderWithRouter(() => {
+        <OrderSummary useOrderHook={stubUseOrder} />;
+      });
+
+      fireEvent.click(getByText("Back to the store"));
+
+      expect(history.location.pathname).toEqual("/");
+    });
+  });
+
+  describe("without order", () => {
+    it("renders error message", () => {
+      const stubUserOrder = () => ({
+        isLoading: false,
+        order: undefined,
+      });
+
+      const { container } = render(
+        <OrderSummary useOrderHook={stubUserOrder} />
+      );
+
+      expect(container.innerHTML).toMatch("Couldn't load order indo.");
+    });
+  });
+});
